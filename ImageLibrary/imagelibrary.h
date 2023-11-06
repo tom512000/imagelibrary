@@ -18,6 +18,7 @@ class ImageLibrary : public QMainWindow
     public:
         ImageLibrary(QWidget *parent = nullptr);
         ~ImageLibrary();
+       void  go();
 };
 
 #endif // IMAGELIBRARY_H
