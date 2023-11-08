@@ -21,4 +21,16 @@ class ImageLibrary : public QMainWindow
        void  go();
 };
 
+class Worker: public QObject
+{
+    private:
+        QString path;
+        Worker (const QString &);
+        void newItem();
+
+    public:
+        void process();
+
+};
+
 #endif // IMAGELIBRARY_H

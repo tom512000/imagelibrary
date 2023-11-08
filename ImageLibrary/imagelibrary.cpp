@@ -4,6 +4,8 @@
 #include <QMessageBox>
 #include <QAction>
 #include <QSettings>
+#include <QStringList>
+#include <QDir>
 
 #include "imagelibrary.h"
 
@@ -33,4 +35,14 @@ void  ImageLibrary::go()
        settings.setValue("dir", dir);
    }
 
+}
+
+Worker::Worker(const QString & path): path(path)
+{
+}
+
+Worker::process()
+{
+    QStringList queue (path);
+    QFileInfoList filesInformations = QDir::entryInfoList(queue, QDir::Files|QDir::AllDirs);
 }
