@@ -6,6 +6,8 @@
 #include <QSettings>
 #include <QStringList>
 #include <QDir>
+#include <QThread>
+#include <QtConcurrent>
 
 #include "imagelibrary.h"
 
@@ -21,22 +23,35 @@ ImageLibrary::~ImageLibrary()
 {
 }
 
-void  ImageLibrary::go()
+void ImageLibrary::go()
 {
     QSettings settings;
-    QString init = settings.value("dir", QDir::homePath()).toString();
-    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), init);
+    QString lastDir = settings.value("lastDirectory", QDir::homePath()).toString();
 
-   if (dir.isNull())
-       QMessageBox::warning(this, "WARNING", "Ya un prob...");
-   else {
-       QMessageBox::information(this, "INFORMATION", "c good :)");
-       settings.setValue("dir", dir);
-       Worker worker(dir);
-       connect(&worker, &Worker::newItem, this, &ImageLibrary::addItem);
-       worker.process();
-   }
+    QString selectedDir = QFileDialog::getExistingDirectory(this, "Select Directory", lastDir);
 
+    if (!selectedDir.isEmpty()) {
+        settings.setValue("lastDirectory", selectedDir);
+        QtConcurrent::run([=](){
+            Worker worker(selectedDir);
+            connect(&worker, &Worker::newItem, this, &ImageLibrary::addItem);
+            worker.process();
+
+        });
+        /*
+        Worker *worker = new Worker(selectedDir);
+        connect(worker, &Worker::newItem, this, &ImageLibrary::addItem);
+        QThread *thread = new QThread;
+        worker->moveToThread(thread);
+        connect(thread, &QThread::started, worker, &Worker::process);
+        connect(worker, &Worker::finished, thread, &QThread::quit);
+        connect(worker, &Worker::finished, worker, &Worker::deleteLater);
+        connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+        thread->start();
+        */
+    } else {
+        QMessageBox::warning(this, "Warning", "Operation canceled or no directory selected!");
+    }
 }
 
 Worker::Worker(const QString & path): path(path)

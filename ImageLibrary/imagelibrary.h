@@ -20,8 +20,6 @@ class ImageLibrary : public QMainWindow
         ~ImageLibrary();
        void go();
        void addItem (const QString &);
-
-
 };
 
 class Worker: public QObject
@@ -33,10 +31,12 @@ class Worker: public QObject
 
     public:
         Worker (const QString &);
+    public slots:
         void process();
 
     signals:
        void newItem(const QString &);
+       void finished();
 };
 
 #endif // IMAGELIBRARY_H
