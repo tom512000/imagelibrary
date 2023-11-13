@@ -18,19 +18,25 @@ class ImageLibrary : public QMainWindow
     public:
         ImageLibrary(QWidget *parent = nullptr);
         ~ImageLibrary();
-       void  go();
+       void go();
+       void addItem (const QString &);
+
+
 };
 
 class Worker: public QObject
 {
+    Q_OBJECT
+
     private:
         QString path;
-        Worker (const QString &);
-        void newItem();
 
     public:
+        Worker (const QString &);
         void process();
 
+    signals:
+       void newItem(const QString &);
 };
 
 #endif // IMAGELIBRARY_H
