@@ -5,6 +5,7 @@
 #include <QStringListModel>
 #include <QListView>
 #include <QToolBar>
+#include <QImage>
 
 class ImageLibrary : public QMainWindow
 {
@@ -37,6 +38,28 @@ class Worker: public QObject
     signals:
        void newItem(const QString &);
        void finished();
+};
+
+class Item
+{
+    public:
+        QString path;
+        QImage thumbnail;
+        Item(const QString &, const QImage &);
+};
+
+class Model: public QAbstractListModel
+{
+    private:
+        QList<Item> items;
+
+    public:
+        Model(const QList<Item> &);
+        int rowCount(const QModelIndex &) const;
+        QVariant data(const QModelIndex &, int) const;
+
+    public slots;
+        void addItem(QString, QImage);
 };
 
 #endif // IMAGELIBRARY_H
