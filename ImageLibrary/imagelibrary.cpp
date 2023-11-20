@@ -11,16 +11,16 @@
 
 #include "imagelibrary.h"
 
-
-
-ImageLibrary::ImageLibrary(QWidget *parent) : QMainWindow(parent), model{}, view{}, toolbar{}
+ImageLibrary::ImageLibrary(QWidget *parent): QMainWindow(parent), model{}, view{}, toolbar{}
 {
     view.setModel(&model);
     view.setViewMode(QListView::IconMode);
     view.setIconSize(QSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE));
     view.setGridSize(QSize(THUMBNAIL_SIZE + 10, THUMBNAIL_SIZE + 10));
     view.setModel(&model);
+
     toolbar.addAction ("GO !", this, &ImageLibrary::go);
+
     QMainWindow::addToolBar(&toolbar);
     QMainWindow::setCentralWidget(&view);
 
@@ -33,12 +33,12 @@ ImageLibrary::~ImageLibrary()
 void ImageLibrary::go()
 {
     QSettings settings;
-    QString lastDir = settings.value("lastDirectory", QDir::homePath()).toString();
+    QString lastDir = settings.value("Dernier dossier", QDir::homePath()).toString();
 
-    QString selectedDir = QFileDialog::getExistingDirectory(this, "Select Directory", lastDir);
+    QString selectedDir = QFileDialog::getExistingDirectory(this, "Sélectionner dossier", lastDir);
 
     if (!selectedDir.isEmpty()) {
-        settings.setValue("lastDirectory", selectedDir);
+        settings.setValue("Dernier dossier", selectedDir);
         QtConcurrent::run([=](){
             Worker worker(selectedDir);
             connect(&worker, &Worker::newItem, this, &ImageLibrary::addItem);
@@ -57,7 +57,7 @@ void ImageLibrary::go()
         thread->start();
         */
     } else {
-        QMessageBox::warning(this, "Warning", "Operation canceled or no directory selected!");
+        QMessageBox::warning(this, "Attention", "Action annulée");
     }
 }
 
@@ -134,15 +134,6 @@ QVariant Model::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole:
             return QVariant::fromValue(item.thumbnail);
         }
-
-    /*
-    if (role == Qt::DisplayRole || role == Qt::ToolTipRole) {
-        const Item &item = items.at(index.row());
-        if (role == Qt::DisplayRole)
-            return item.path;
-        else if (role == Qt::ToolTipRole)
-            return QVariant(item.path);
-    }*/
 
     return QVariant();
 }
