@@ -7,38 +7,7 @@
 #include <QToolBar>
 #include <QImage>
 
-class ImageLibrary : public QMainWindow
-{
-    Q_OBJECT
-
-    private:
-        QStringListModel model;
-        QListView view;
-        QToolBar toolbar;
-
-    public:
-        ImageLibrary(QWidget *parent = nullptr);
-        ~ImageLibrary();
-       void go();
-       void addItem (const QString &);
-};
-
-class Worker: public QObject
-{
-    Q_OBJECT
-
-    private:
-        QString path;
-
-    public:
-        Worker (const QString &);
-    public slots:
-        void process();
-
-    signals:
-       void newItem(const QString &);
-       void finished();
-};
+#define THUMBNAIL_SIZE 128
 
 class Item
 {
@@ -50,16 +19,53 @@ class Item
 
 class Model: public QAbstractListModel
 {
+    Q_OBJECT
+
     private:
         QList<Item> items;
 
     public:
-        Model(const QList<Item> &);
+        Model();
         int rowCount(const QModelIndex &) const;
         QVariant data(const QModelIndex &, int) const;
 
-    public slots;
-        void addItem(QString, QImage);
+    public slots:
+        void addItem(const QString &, const QImage &);
+};
+
+class ImageLibrary : public QMainWindow
+{
+    Q_OBJECT
+
+    private:
+        Model model;
+        QListView view;
+        QToolBar toolbar;
+
+    public:
+        ImageLibrary(QWidget *parent = nullptr);
+        ~ImageLibrary();
+       void go();
+       void addItem (const QString &, const QImage &);
+};
+
+class Worker: public QObject
+{
+    Q_OBJECT
+
+    private:
+        QString path;
+
+    public:
+        Worker (const QString &);
+        static QImage Thumbnail(const QString &);
+
+    public slots:
+        void process();
+
+    signals:
+       void newItem(const QString &, const QImage &);
+       void finished();
 };
 
 #endif // IMAGELIBRARY_H
