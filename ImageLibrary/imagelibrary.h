@@ -59,6 +59,7 @@ class Worker: public QObject
     public:
         Worker (const QString &);
         static QImage Thumbnail(const QString &);
+        static Item MappedItem(const QString &);
 
     public slots:
         void process();

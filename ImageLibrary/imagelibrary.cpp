@@ -45,17 +45,6 @@ void ImageLibrary::go()
             worker.process();
 
         });
-        /*
-        Worker *worker = new Worker(selectedDir);
-        connect(worker, &WQAbstractListModelorker::newItem, this, &ImageLibrary::addItem);
-        QThread *thread = new QThread;
-        worker->moveToThread(thread);
-        connect(thread, &QThread::started, worker, &Worker::process);
-        connect(worker, &Worker::finished, thread, &QThread::quit);
-        connect(worker, &Worker::finished, worker, &Worker::deleteLater);
-        connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-        thread->start();
-        */
     } else {
         QMessageBox::warning(this, "Attention", "Action annulée");
     }
@@ -63,6 +52,11 @@ void ImageLibrary::go()
 
 Worker::Worker(const QString & path): path(path)
 {
+}
+
+Item Worker::MappedItem(const QString & path)
+{
+    return Item(path, Thumbnail(path));
 }
 
 void Worker::process()
