@@ -8,6 +8,8 @@
 #include <QDir>
 #include <QThread>
 #include <QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 #include "imagelibrary.h"
 
@@ -56,12 +58,13 @@ Worker::Worker(const QString & path): path(path)
 
 Item Worker::MappedItem(const QString & path)
 {
-    return Item(path, Thumbnail(path));
+    return Item(path,Thumbnail(path));
 }
 
 void Worker::process()
 {
     QStringList queue;
+    QStringList allItems;
     queue << path;
 
     while (!queue.isEmpty()) {
@@ -73,10 +76,22 @@ void Worker::process()
             if (entry.isDir()) {
                 queue << entry.absoluteFilePath();
             } else if (entry.isFile() && (entry.suffix() == "png" || entry.suffix() == "jpg" || entry.suffix() == "jpeg")) {
-                emit newItem(entry.absoluteFilePath(), Worker::Thumbnail(entry.absoluteFilePath()));
+                allItems += entry.absoluteFilePath();
+                //emit newItem(entry.absoluteFilePath(), Worker::Thumbnail(entry.absoluteFilePath()));
             }
-        }
+        }  
     }
+    connect(&watcher, &QFutureWatcher<Item>::resultReadyAt, this, &Worker::processItem);
+    watcher.setFuture(QtConcurrent::mapped(allItems,MappedItem));
+    QEventLoop eventloop;
+    connect(&watcher,&QFutureWatcher<Item>::finished,&eventloop,&QEventLoop::quit);
+    eventloop.exec();
+}
+
+void Worker::processItem(int k)
+{
+    const Item & item =watcher.resultAt(k);
+    emit newItem(item.path,item.thumbnail);
 }
 
 QImage Worker::Thumbnail(const QString & filePath)
