@@ -6,6 +6,9 @@
 #include <QListView>
 #include <QToolBar>
 #include <QImage>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QtConcurrent>
 #include <QFutureWatcher>
 
 #define THUMBNAIL_SIZE 128
@@ -15,7 +18,7 @@ class Item
     public:
         QString path;
         QImage thumbnail;
-        Item(){};
+        Item() {};
         Item(const QString &, const QImage &);
 };
 
@@ -58,11 +61,12 @@ class Worker: public QObject
     private:
         QString path;
         QFutureWatcher<Item> watcher;
+
     public:
         Worker (const QString &);
         static QImage Thumbnail(const QString &);
         static Item MappedItem(const QString &);
-        void processItem(int );
+        void processItem(int);
 
     public slots:
         void process();
@@ -72,4 +76,4 @@ class Worker: public QObject
        void finished();
 };
 
-#endif // IMAGELIBRARY_H
+#endif

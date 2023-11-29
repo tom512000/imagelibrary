@@ -1,20 +1,15 @@
-#include "QApplication"
-#include <QString>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QAction>
-#include <QSettings>
-#include <QStringList>
-#include <QDir>
-#include <QThread>
-#include <QtConcurrent>
-#include <QFuture>
-#include <QFutureWatcher>
-
 #include "imagelibrary.h"
+
+// Méthodes de la classe ImageLibrary
+ImageLibrary::~ImageLibrary()
+{
+}
 
 ImageLibrary::ImageLibrary(QWidget *parent): QMainWindow(parent), model{}, view{}, toolbar{}
 {
+    QMainWindow::addToolBar(&toolbar);
+    QMainWindow::setCentralWidget(&view);
+
     view.setModel(&model);
     view.setViewMode(QListView::IconMode);
     view.setIconSize(QSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE));
@@ -22,43 +17,38 @@ ImageLibrary::ImageLibrary(QWidget *parent): QMainWindow(parent), model{}, view{
     view.setModel(&model);
 
     toolbar.addAction ("GO !", this, &ImageLibrary::go);
-
-    QMainWindow::addToolBar(&toolbar);
-    QMainWindow::setCentralWidget(&view);
-
-}
-
-ImageLibrary::~ImageLibrary()
-{
 }
 
 void ImageLibrary::go()
 {
     QSettings settings;
     QString lastDir = settings.value("Dernier dossier", QDir::homePath()).toString();
-
-    QString selectedDir = QFileDialog::getExistingDirectory(this, "Sélectionner dossier", lastDir);
+    QString selectedDir = QFileDialog::getExistingDirectory(this, "Sélectionnez un dossier :", lastDir);
 
     if (!selectedDir.isEmpty()) {
         settings.setValue("Dernier dossier", selectedDir);
+
         QtConcurrent::run([=](){
             Worker worker(selectedDir);
             connect(&worker, &Worker::newItem, this, &ImageLibrary::addItem);
             worker.process();
-
         });
-    } else {
-        QMessageBox::warning(this, "Attention", "Action annulée");
-    }
+    } else
+        QMessageBox::warning(this, "Attention", "Action annulée !");
 }
 
+void ImageLibrary::addItem (const QString & path, const QImage & thumbnail)
+{
+  model.addItem(path, thumbnail);
+}
+
+
+
+
+
+// Méthodes de la classe Worker
 Worker::Worker(const QString & path): path(path)
 {
-}
-
-Item Worker::MappedItem(const QString & path)
-{
-    return Item(path,Thumbnail(path));
 }
 
 void Worker::process()
@@ -73,56 +63,68 @@ void Worker::process()
         QFileInfoList entries = currentDir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
         foreach (const QFileInfo &entry, entries) {
-            if (entry.isDir()) {
+            if (entry.isDir())
                 queue << entry.absoluteFilePath();
-            } else if (entry.isFile() && (entry.suffix() == "png" || entry.suffix() == "jpg" || entry.suffix() == "jpeg")) {
-                allItems += entry.absoluteFilePath();
-                //emit newItem(entry.absoluteFilePath(), Worker::Thumbnail(entry.absoluteFilePath()));
-            }
-        }  
+
+            else if (entry.isFile() && (entry.suffix() == "png" || entry.suffix() == "jpg" || entry.suffix() == "jpeg"))
+                allItems << entry.absoluteFilePath();
+        }
     }
+
     connect(&watcher, &QFutureWatcher<Item>::resultReadyAt, this, &Worker::processItem);
-    watcher.setFuture(QtConcurrent::mapped(allItems,MappedItem));
+    watcher.setFuture(QtConcurrent::mapped(allItems, MappedItem));
+
     QEventLoop eventloop;
-    connect(&watcher,&QFutureWatcher<Item>::finished,&eventloop,&QEventLoop::quit);
+    connect(&watcher, &QFutureWatcher<Item>::finished, &eventloop, &QEventLoop::quit);
     eventloop.exec();
 }
 
 void Worker::processItem(int k)
 {
-    const Item & item =watcher.resultAt(k);
-    emit newItem(item.path,item.thumbnail);
+    const Item &item = watcher.resultAt(k);
+    emit newItem(item.path, item.thumbnail);
 }
 
 QImage Worker::Thumbnail(const QString & filePath)
 {
     QImage originalImage(filePath);
 
-        if (originalImage.isNull()) {
-            qDebug() << "ça marche pas" << filePath;
-            return QImage();
-        }
+    if (originalImage.isNull()) {
+        qDebug() << "Aucune image disponible !" << filePath;
 
-        QSize newSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
-        QImage thumbnail = originalImage.scaled(newSize, Qt::KeepAspectRatio);
+        return QImage();
+    }
 
-        return thumbnail;
+    QSize newSize(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+    QImage thumbnail = originalImage.scaled(newSize, Qt::KeepAspectRatio);
+
+    return thumbnail;
 }
 
-void ImageLibrary::addItem (const QString & path,const QImage & thumbnail)
+Item Worker::MappedItem(const QString & path)
 {
-  model.addItem(path, thumbnail);
+    return Item(path, Thumbnail(path));
 }
 
+
+
+
+
+// Méthodes de la classe Item
 Item::Item(const QString & path, const QImage & thumbnail): path(path), thumbnail(thumbnail)
 {
 }
 
+
+
+
+
+// Méthodes de la classe Model
 Model::Model(): items()
 {
 }
 
-int Model::rowCount(const QModelIndex &parent) const
+int Model::rowCount(const QModelIndex & parent) const
 {
     if (parent.isValid())
         return 0;
@@ -130,10 +132,11 @@ int Model::rowCount(const QModelIndex &parent) const
     return items.count();
 }
 
-QVariant Model::data(const QModelIndex &index, int role) const
+QVariant Model::data(const QModelIndex & index, int role) const
 {
     if (!index.isValid())
         return QVariant();
+
     const Item &item = items.at(index.row());
     switch (role) {
         case Qt::DisplayRole:
@@ -147,10 +150,11 @@ QVariant Model::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-void Model::addItem(const QString &path, const QImage &thumbnail)
+void Model::addItem(const QString & path, const QImage & thumbnail)
 {
     int row = rowCount(QModelIndex());
+
     beginInsertRows(QModelIndex(), row, row);
-    items.append(Item(path,thumbnail));
+    items.append(Item(path, thumbnail));
     endInsertRows();
 }
